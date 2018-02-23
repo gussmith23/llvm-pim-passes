@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "llvm/Pass.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/Support/raw_ostream.h"
@@ -9,7 +11,7 @@ namespace {
       PimPass() : llvm::BasicBlockPass(ID) {}
 
       bool runOnBasicBlock(llvm::BasicBlock& basicBlock) {
-        llvm::errs() << "Hello\n";
+        llvm::errs() << basicBlock << "\n";
         return true;
       }
   };
