@@ -59,7 +59,20 @@ namespace {
             continue;
 
           bool allLoadsOrImmediates = true;
+          bool allOperandsOnlyUsedByInstr = true;
           for (llvm::Use& use : instr->operands()) {
+
+            // First, before all else, check to see if this thing is used only by the op. 
+            // If so, then we're good to replace it.
+            // If not, then it could still be replaced, but requires a more complicated analysis.
+            // TODO even in this simple state, i'm not sure this is actually right.
+            // It could have 2 uses or more, but only becasue it's in two llos chains.
+            if (use.get()->hasNUsesOrMore(2)) {
+              allOperandsOnlyUsedByInstr = false;
+              llvm::errs() << "One of the operands is used by at least one other instruction. Can't get rid of this operand.\n";
+              break;
+            }
+            
             if (llvm::Instruction* useInstr = llvm::dyn_cast<llvm::Instruction>(use.get())) {
               if (useInstr->getOpcode() == llvm::Instruction::Load) {
               } else {
@@ -70,10 +83,10 @@ namespace {
                         || use->getType()->getTypeID() == llvm::Type::FloatTyID
                         || use->getType()->getTypeID() == llvm::Type::DoubleTyID
                         || use->getType()->getTypeID() == llvm::Type::IntegerTyID) {
-              
             } else {
               llvm::errs() << "Found an operand that is of an unsupported type: " << use->getType() << "\n";
               allLoadsOrImmediates = false;
+              break;
             }
           }
 
