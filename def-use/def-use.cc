@@ -15,8 +15,7 @@ namespace {
    * takes a store.
    * Represents a chain which can be outsourced to PIM.
    */
-  class LoadLoadOpStore {
-    public:
+  struct LoadLoadOpStore {
       LoadLoadOpStore(std::vector<llvm::Value*> inputs, llvm::Value* op, std::vector<llvm::Value*> stores)
         : inputs(inputs), op(op), stores(stores) {};
 
@@ -100,6 +99,10 @@ namespace {
         for (LoadLoadOpStore llos : foundLlos) {
           llvm::errs() << llos << "\n";
         }
+
+        // TODO i need to filter out by llos's whose inputs are only used by the op in the llos.
+        // that is, if i'm going to replace l-l-o-s with one instruction in memory, i can't just
+        // throw out loads whose values are used elsewhere.
 
         return false;
       }
