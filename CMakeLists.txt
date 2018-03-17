@@ -1,10 +1,10 @@
 # From https://github.com/abenkhadra/llvm-pass-tutorial
 cmake_minimum_required(VERSION 3.4)
 
+# Brute-force fix
+add_definitions(-DHAVE_LLVM -DENABLE_CFG)
+
 find_package(LLVM REQUIRED CONFIG)
-add_definitions(${LLVM_DEFINITIONS})
-include_directories(${LLVM_INCLUDE_DIRS})
-link_directories(${LLVM_LIBRARY_DIRS})
 
 set(PASS_LIBRARY_OUTPUT_DIR ${PROJECT_BINARY_DIR}/pass-libs)
 
@@ -15,7 +15,17 @@ function(add_pass PASS_NAME PASS_SOURCES)
     COMPILE_FLAGS "-fno-rtti"
     LIBRARY_OUTPUT_DIRECTORY ${PASS_LIBRARY_OUTPUT_DIR}
   )
+
+  target_include_directories(${PASS_NAME} PRIVATE ${LLVM_INCLUDE_DIRS})
+  # See https://github.com/mchalupa/dg/issues/182 to understand why this
+  # is commented out.
+  # TODO I don't get why this isn't breaking things...
+  #llvm_map_components_to_libnames(LLVM_LIBS core)#support core irreader)
+  #target_link_libraries(${PASS_NAME} PRIVATE ${LLVM_LIBS})
 endfunction(add_pass)
 
 add_subdirectory(pim-pass)
 add_subdirectory(srivatsa_transforms)
+add_subdirectory(test-module-pass)
+add_subdirectory(./dg-test)
+add_subdirectory(./def-use)

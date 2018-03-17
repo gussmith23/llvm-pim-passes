@@ -1,0 +1,93 @@
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/DataLayout.h"
+#include "llvm/IR/DIBuilder.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/MDBuilder.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/NoFolder.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/ADT/Statistic.h"
+#include "llvm/Pass.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Constant.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Instruction.def"
+
+using namespace llvm;
+
+namespace 
+{
+       struct in_mem_compute_replace:public FunctionPass
+       {
+          static char ID;
+          in_mem_compute_replace():FunctionPass(ID){}
+          bool runOnFunction(Function &F) override{
+            for(Function::iterator bb = F.begin(), e = F.end(); bb!=e;bb++)
+            {
+              int j = 0; 
+              
+              //errs()<<*bb<<"\n";
+              //for (BasicBlock::iterator i = bb->begin(), i2 = bb->end();i!=i2;i++)
+              //for (BasicBlock::iterator i2 = bb->end(), i = bb->begin();i2!=i;i--)
+                for (BasicBlock::iterator i2 = bb->end(),i = bb->begin();i2!=i;)
+                               
+              {
+                i2--; 
+                Instruction* inst = dyn_cast<Instruction>(i2); 
+                //i3 =i2;
+                errs()<<*i2<<"\n";
+                            
+                if(inst->getOpcode() == Instruction::Add)
+                   {
+                       Value *a = &(*inst->getOperand(0));
+                       Value *b = &(*inst->getOperand(1));
+                       Instruction* a1 = dyn_cast<Instruction>(a);
+                       Instruction* b1 = dyn_cast<Instruction>(b);
+                         //errs()<<*a<<"\n";
+                  	                   	                   	 
+                  	 if(a1->getOpcode() == Instruction::Add && b1->getOpcode() == Instruction::Load)
+                  	   {
+                  	    //inst()->getOperand(0)->eraseFromParent();
+                  	       for(User *W: inst->users())
+                       		 {
+                        		if(Instruction *Inst2 = dyn_cast<Instruction>(W))
+                          		 {
+                           		  if(Inst2->getOpcode() == Instruction::Add || Inst2->getOpcode() == Instruction::Store)
+                               			{
+                               			 Inst2->eraseFromParent();
+                                		 //errs()<< *Inst2 <<"\n";
+                                		 //inst->replaceAllUsesWith(UndefValue::get(inst->getType()));
+                                		 //inst->eraseFromParent();	 
+                          	                 //a1->eraseFromParent(); 
+                          	                 //b1->eraseFromParent();
+                          	                 //errs()<< *Inst2 <<"\n";
+                                		 //errs()<< check_used << "\n";
+                              			 }
+                              		 
+                          		 }
+                          	     
+                          	     
+                        	  }       
+                  	              
+                  	       
+                  	    }
+                  	
+                  	           
+                   }                           
+                            
+              }
+              //a->eraseFromParent();
+            }
+            return false;
+          }
+        };
+}
+  
+  char in_mem_compute_replace::ID = 0;
+  static RegisterPass<in_mem_compute_replace> X("in_mem_compute_replace", "this is a pass");
+

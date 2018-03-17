@@ -1,17 +1,17 @@
 #include <iostream>
 
 #include "llvm/Pass.h"
-#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Function.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
-  class PimPass : public llvm::BasicBlockPass {
+  class PimPass : public llvm::FunctionPass {
     public:
       static char ID;
-      PimPass() : llvm::BasicBlockPass(ID) {}
+      PimPass() : llvm::FunctionPass(ID) {}
 
-      bool runOnBasicBlock(llvm::BasicBlock& basicBlock) {
-        llvm::errs() << basicBlock << "\n";
+      bool runOnFunction(llvm::Function& function) {
+        llvm::errs() << function << "\n";
         return true;
       }
   };
