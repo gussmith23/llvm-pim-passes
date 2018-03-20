@@ -5,6 +5,8 @@
 #include "llvm/IR/InstIterator.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/IR/Intrinsics.h"
 
 namespace {
 
@@ -16,7 +18,7 @@ namespace {
    * Represents a chain which can be outsourced to PIM.
    */
   struct LoadLoadOpStore {
-      LoadLoadOpStore(std::vector<llvm::Value*> inputs, llvm::Value* op, std::vector<llvm::Value*> stores)
+      LoadLoadOpStore(std::vector<llvm::Value*> inputs, llvm::Instruction* op, std::vector<llvm::Value*> stores)
         : inputs(inputs), op(op), stores(stores) {};
 
       friend llvm::raw_ostream& operator<<(llvm::raw_ostream& ostream, const LoadLoadOpStore& llos) {
@@ -28,9 +30,8 @@ namespace {
         return ostream;
       }
     
-    private:
       std::vector<llvm::Value*> inputs;
-      llvm::Value* op;
+      llvm::Instruction* op;
       std::vector<llvm::Value*> stores;
   };
 
@@ -117,7 +118,23 @@ namespace {
         // that is, if i'm going to replace l-l-o-s with one instruction in memory, i can't just
         // throw out loads whose values are used elsewhere.
 
-        return false;
+
+        // Replace instructions
+        for (LoadLoadOpStore llos : foundLlos) {
+          ///llvm::ReplaceInstWithInst(instr, //TODO add new instruction!
+          
+          llvm::Function* cacheOp = llvm::Intrinsic::getDeclaration(function.getParent(), llvm::Intrinsic::ID::cache_op);
+          llvm::CallInst* callCacheOp = llvm::CallInst::Create(cacheOp, llvm::ArrayRef<llvm::Value*>());
+          llvm::ReplaceInstWithInst(llos.op, callCacheOp);
+                                                
+          for (llvm::Value* input : llos.inputs) 
+            if (llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(input)) inst->eraseFromParent();
+
+          for (llvm::Value* output : llos.stores) 
+            if (llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(output)) inst->eraseFromParent();
+        }
+
+        return foundLlos.size()>0;
       }
   };
 }
