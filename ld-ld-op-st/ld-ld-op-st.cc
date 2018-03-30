@@ -41,27 +41,25 @@ bool replaceLoadLoadOpStore(std::vector<LoadLoadOpStore> loadLoadOpStores);
 class FindLdLdOpSt : public llvm::FunctionPass {
   public:
     static char ID;
+
     FindLdLdOpSt() : llvm::FunctionPass(ID) {}
 
     bool runOnFunction(llvm::Function& function) override {
       for (LoadLoadOpStore llos : findLoadLoadOpStore(function)) 
         llvm::outs() << llos;
-      
       return false;
     }
-
 };
 
 class ReplaceLdLdOpSt : public llvm::FunctionPass {
   public:
     static char ID;
+
     ReplaceLdLdOpSt() : llvm::FunctionPass(ID) {}
 
     bool runOnFunction(llvm::Function& function) override {
       std::vector<LoadLoadOpStore> lloss = findLoadLoadOpStore(function);
-      
       // Do something
-      
       return false;
     }
 };
@@ -209,7 +207,7 @@ bool replaceLoadLoadOpStore(std::vector<LoadLoadOpStore> loadLoadOpStores) {
 } // namespace
 
 char FindLdLdOpSt::ID = 0;
-static llvm::RegisterPass<FindLdLdOpSt> a("-find-ld-ld-op-st","Find and print ld-ld-op-store patterns");
+static llvm::RegisterPass<FindLdLdOpSt> a("find-ld-ld-op-st","Find and print ld-ld-op-store patterns");
 
 char ReplaceLdLdOpSt::ID = 1;
-static llvm::RegisterPass<ReplaceLdLdOpSt> b("-replace-ld-ld-op-st","Find and replace ld-ld-op-store patterns");
+static llvm::RegisterPass<ReplaceLdLdOpSt> b("replace-ld-ld-op-st","Find and replace ld-ld-op-store patterns");
