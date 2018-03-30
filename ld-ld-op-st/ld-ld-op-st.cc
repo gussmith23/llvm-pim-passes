@@ -1,5 +1,6 @@
 #include <iostream>
 #include <set>
+#include <map>
 
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
@@ -75,8 +76,13 @@ class FindLdLdOpSt : public llvm::ModulePass {
     }
 
     void print(llvm::raw_ostream& os, const llvm::Module* m) const override {
-      for (LoadLoadOpStore llos : lloss)
-        os << llos;
+
+      std::map<unsigned int, unsigned long> histogram;
+      for (LoadLoadOpStore llos : lloss) 
+        histogram[llos.op->getOpcode()]++;
+
+      for (unsigned int opcode : offloadableOpcodes) 
+        os << llvm::Instruction::getOpcodeName(opcode) << "\t" << histogram[opcode] << "\n";
     }
   private:
     std::vector<LoadLoadOpStore> lloss;
