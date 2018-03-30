@@ -25,7 +25,9 @@ function(add_pass PASS_NAME PASS_SOURCES)
 endfunction(add_pass)
 
 add_subdirectory(pim-pass)
-add_subdirectory(srivatsa_transforms)
+# TODO broken by change in LLVM API
+#add_subdirectory(srivatsa_transforms)
 add_subdirectory(test-module-pass)
 add_subdirectory(./dg-test)
-add_subdirectory(./def-use)
+add_subdirectory(./ld-ld-op-st)
+add_subdirectory(./dg-def-use)
