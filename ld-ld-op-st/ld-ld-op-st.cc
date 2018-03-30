@@ -1,4 +1,5 @@
 #include <iostream>
+#include <set>
 
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
@@ -33,6 +34,19 @@ struct LoadLoadOpStore {
     std::vector<llvm::Value*> inputs;
     llvm::Instruction* op;
     std::vector<llvm::Value*> stores;
+};
+
+/**
+ * The instructions which our Processing in Memory architecture can support
+ * in-memory.
+ */
+std::set<unsigned int> offloadableOpcodes = {
+  llvm::Instruction::Add,
+  llvm::Instruction::Sub,
+  llvm::Instruction::Mul,
+  llvm::Instruction::And,
+  llvm::Instruction::Or,
+  llvm::Instruction::Xor 
 };
 
 std::vector<LoadLoadOpStore> findLoadLoadOpStore(llvm::Function& function);
@@ -81,12 +95,7 @@ std::vector<LoadLoadOpStore> findLoadLoadOpStore(llvm::Function& function) {
   for(std::vector<llvm::Instruction*>::iterator iter = worklist.begin(); iter != worklist.end(); ++iter) {
     llvm::Instruction* instr = *iter;
 
-    if (!(instr->getOpcode() == llvm::Instruction::Add 
-        || instr->getOpcode() == llvm::Instruction::Sub
-        || instr->getOpcode() == llvm::Instruction::Mul
-        || instr->getOpcode() == llvm::Instruction::And
-        || instr->getOpcode() == llvm::Instruction::Or
-        || instr->getOpcode() == llvm::Instruction::Xor))
+    if (offloadableOpcodes.find(instr->getOpcode()) == offloadableOpcodes.end())
       continue;
 
     // We use these to track different things about the operands.
