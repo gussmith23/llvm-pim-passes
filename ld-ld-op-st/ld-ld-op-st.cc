@@ -45,10 +45,16 @@ class FindLdLdOpSt : public llvm::FunctionPass {
     FindLdLdOpSt() : llvm::FunctionPass(ID) {}
 
     bool runOnFunction(llvm::Function& function) override {
-      for (LoadLoadOpStore llos : findLoadLoadOpStore(function)) 
-        llvm::outs() << llos;
+      lloss = findLoadLoadOpStore(function);
       return false;
     }
+
+    void print(llvm::raw_ostream& os, const llvm::Module* m) const override {
+      for (LoadLoadOpStore llos : lloss)
+        os << llos;
+    }
+  private:
+    std::vector<LoadLoadOpStore> lloss;
 };
 
 class ReplaceLdLdOpSt : public llvm::FunctionPass {
@@ -207,7 +213,10 @@ bool replaceLoadLoadOpStore(std::vector<LoadLoadOpStore> loadLoadOpStores) {
 } // namespace
 
 char FindLdLdOpSt::ID = 0;
-static llvm::RegisterPass<FindLdLdOpSt> a("find-ld-ld-op-st","Find and print ld-ld-op-store patterns");
+static llvm::RegisterPass<FindLdLdOpSt> a("find-ld-ld-op-st","Find and print ld-ld-op-store patterns",
+                                          true, // CFG only (TODO what is this?)
+                                          true // analysis pass
+                                          );
 
 char ReplaceLdLdOpSt::ID = 1;
 static llvm::RegisterPass<ReplaceLdLdOpSt> b("replace-ld-ld-op-st","Find and replace ld-ld-op-store patterns");
