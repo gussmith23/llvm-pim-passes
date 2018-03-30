@@ -1,6 +1,9 @@
+#include <functional>
+#include <algorithm>
 #include <iostream>
 #include <set>
 #include <map>
+#include <numeric>
 
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
@@ -21,21 +24,51 @@ namespace {
  * Represents a chain which can be outsourced to PIM.
  */
 struct LoadLoadOpStore {
-    LoadLoadOpStore(std::vector<llvm::Value*> inputs, llvm::Instruction* op, std::vector<llvm::Value*> stores)
-      : inputs(inputs), op(op), stores(stores) {};
+  LoadLoadOpStore(std::vector<llvm::Value*> inputs, llvm::Instruction* op, std::vector<llvm::Value*> stores)
+    : inputs(inputs), op(op), stores(stores) {};
 
-    friend llvm::raw_ostream& operator<<(llvm::raw_ostream& os, const LoadLoadOpStore& llos) {
-      os << "Inputs:\n";
-      for (llvm::Value* input : llos.inputs) os << "\t" << *input << "\n";
-      os << "Operation:\n\t" << *llos.op << "\n";
-      os << "Outputs:\n";
-      for (llvm::Value* output : llos.stores) os << "\t" << *output << "\n";
-      return os;
-    }
-  
-    std::vector<llvm::Value*> inputs;
-    llvm::Instruction* op;
-    std::vector<llvm::Value*> stores;
+  friend llvm::raw_ostream& operator<<(llvm::raw_ostream& os, const LoadLoadOpStore& llos) {
+    os << "Inputs:\n";
+    for (llvm::Value* input : llos.inputs) os << "\t" << *input << "\n";
+    os << "Operation:\n\t" << *llos.op << "\n";
+    os << "Outputs:\n";
+    for (llvm::Value* output : llos.stores) os << "\t" << *output << "\n";
+    return os;
+  }
+
+  std::vector<llvm::Value*> inputs;
+  llvm::Instruction* op;
+  std::vector<llvm::Value*> stores;
+};
+
+/**
+ * This is a collection of instructions which ends with an operation and a
+ * store. Furthermore, the result of the operation is not used again.
+ * 
+ * We use this struct to represent a sequence of instructions that's
+ * "almost" a LoadLoadOpStore; that is, it would be a LoadLoadOpStore if
+ * its operands were loads. We'd like to track this so that we can
+ * motivate our later search for more complex patterns. I.e., if we can
+ * show  that there are a lot of OpStores -- many more than there are
+ * LoadLoadOpStores -- then this shows us we shouldn't be looking at just
+ * LoadLoadOpStores.
+ */
+struct OpStore {
+  OpStore(std::vector<llvm::Value*> inputs, llvm::Instruction* op, std::vector<llvm::Value*> stores)
+    : inputs(inputs), op(op), stores(stores) {};
+
+  friend llvm::raw_ostream& operator<<(llvm::raw_ostream& os, const OpStore& llos) {
+    os << "Inputs:\n";
+    for (llvm::Value* input : llos.inputs) os << "\t" << *input << "\n";
+    os << "Operation:\n\t" << *llos.op << "\n";
+    os << "Outputs:\n";
+    for (llvm::Value* output : llos.stores) os << "\t" << *output << "\n";
+    return os;
+  }
+
+  std::vector<llvm::Value*> inputs;
+  llvm::Instruction* op;
+  std::vector<llvm::Value*> stores;
 };
 
 /**
@@ -58,7 +91,18 @@ std::set<unsigned int> offloadableOpcodes = {
   llvm::Instruction::URem,
 };
 
-std::vector<LoadLoadOpStore> findLoadLoadOpStore(llvm::Function& function);
+/**
+ * Find ld-ld-op-st patterns in a function.
+ *
+ * A ld-ld-op-st gets turned into a LoadLoadOpStore and appended to
+ * foundLlos.
+ *
+ * An op-st pattern which isn't a ld-ld-op-st gets turned into an OpStore
+ * and appended to foundOs.
+ */
+void findLoadLoadOpStore(llvm::Function& function,
+                          std::vector<LoadLoadOpStore>& foundLlos,
+                          std::vector<OpStore>& foundOs);
 bool replaceLoadLoadOpStore(std::vector<LoadLoadOpStore> loadLoadOpStores);
 
 class FindLdLdOpSt : public llvm::ModulePass {
@@ -68,10 +112,8 @@ class FindLdLdOpSt : public llvm::ModulePass {
     FindLdLdOpSt() : llvm::ModulePass(ID) {}
 
     bool runOnModule(llvm::Module& module) override {
-      for (llvm::Function& function : module.functions()) {
-        auto newLloss = findLoadLoadOpStore(function);
-        lloss.insert(lloss.end(), newLloss.begin(), newLloss.end());
-      }
+      for (llvm::Function& function : module.functions())
+        findLoadLoadOpStore(function, lloss, oss);
       return false;
     }
 
@@ -83,9 +125,15 @@ class FindLdLdOpSt : public llvm::ModulePass {
 
       for (unsigned int opcode : offloadableOpcodes) 
         os << llvm::Instruction::getOpcodeName(opcode) << "\t" << histogram[opcode] << "\n";
+
+      os << "\n";
+
+      for (OpStore opStore : oss) os << opStore << "\n";
+
     }
   private:
     std::vector<LoadLoadOpStore> lloss;
+    std::vector<OpStore> oss;
 };
 
 class ReplaceLdLdOpSt : public llvm::FunctionPass {
@@ -95,19 +143,21 @@ class ReplaceLdLdOpSt : public llvm::FunctionPass {
     ReplaceLdLdOpSt() : llvm::FunctionPass(ID) {}
 
     bool runOnFunction(llvm::Function& function) override {
-      std::vector<LoadLoadOpStore> lloss = findLoadLoadOpStore(function);
+      std::vector<LoadLoadOpStore> lloss;
+      std::vector<OpStore> oss;
+      findLoadLoadOpStore(function, lloss, oss);
       // Do something
       return false;
     }
 };
 
-std::vector<LoadLoadOpStore> findLoadLoadOpStore(llvm::Function& function) {
+void findLoadLoadOpStore(llvm::Function& function,
+                          std::vector<LoadLoadOpStore>& foundLlos,
+                          std::vector<OpStore>& foundOs) {
   std::vector<llvm::Instruction*> worklist;
   for(llvm::inst_iterator I = inst_begin(function), E = inst_end(function); I != E; ++I){
     worklist.push_back(&*I);
   }
-
-  std::vector<LoadLoadOpStore> foundLlos;
 
   for(std::vector<llvm::Instruction*>::iterator iter = worklist.begin(); iter != worklist.end(); ++iter) {
     llvm::Instruction* instr = *iter;
@@ -160,6 +210,16 @@ std::vector<LoadLoadOpStore> findLoadLoadOpStore(llvm::Function& function) {
       }
     }
 
+    // In this basic analysis, if the result of op is used by any instruction
+    // other than a store, we want to throw it out.
+    /* A fun way to do this using functional-style C++17:
+     * Though I'm not gonna argue that it's better. It's definitely not more readable.
+    std::vector<bool> usersAreStores;
+    std::transform(instr->users().begin(), instr->users().end(),
+                    usersAreStores.begin(),
+                    [](llvm::User* user){return llvm::dyn_cast<llvm::StoreInst>(user);});
+    std::reduce(usersAreStores.begin(), usersAreStores.end(), true, std::multiplies<bool>);
+    */
     bool allStores = true;
     for (llvm::User* user : instr->users()) {
       if (llvm::dyn_cast<llvm::StoreInst>(user)) {
@@ -181,24 +241,29 @@ std::vector<LoadLoadOpStore> findLoadLoadOpStore(llvm::Function& function) {
       for (llvm::User* user : instr->users())
         llvm::errs() << "\t" << *user << "\n";
 
-      foundLlos.push_back(
-          LoadLoadOpStore(
-            std::vector<llvm::Value*>(instr->operands().begin(), instr->operands().end()),
-            instr,
-            std::vector<llvm::Value*>(instr->users().begin(), instr->users().end())) 
-          );
+      foundLlos.emplace_back(
+        std::vector<llvm::Value*>(instr->operands().begin(), instr->operands().end()),
+        instr,
+        std::vector<llvm::Value*>(instr->users().begin(), instr->users().end())
+      );
+    } 
+    // Make an OpStore if the operands aren't just loads.
+    // Note that we still want the store(s) at the end to be the only
+    // instruction(s) using the result of op.
+    else if (!allLoads && allStores) {
+      foundOs.emplace_back(
+        std::vector<llvm::Value*>(instr->operands().begin(), instr->operands().end()),
+        instr,
+        std::vector<llvm::Value*>(instr->users().begin(), instr->users().end())
+      );
+      
     }
   } 
-
-  for (LoadLoadOpStore llos : foundLlos) {
-    llvm::errs() << llos << "\n";
-  }
 
   // TODO i need to filter out by llos's whose inputs are only used by the op in the llos.
   // that is, if i'm going to replace l-l-o-s with one instruction in memory, i can't just
   // throw out loads whose values are used elsewhere.
 
-  return foundLlos;
 }
 
 bool replaceLoadLoadOpStore(std::vector<LoadLoadOpStore> loadLoadOpStores) {
