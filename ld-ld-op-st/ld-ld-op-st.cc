@@ -47,7 +47,14 @@ std::set<unsigned int> offloadableOpcodes = {
   llvm::Instruction::Mul,
   llvm::Instruction::And,
   llvm::Instruction::Or,
-  llvm::Instruction::Xor 
+  llvm::Instruction::Xor,
+  llvm::Instruction::AShr,
+  llvm::Instruction::LShr,
+  llvm::Instruction::Shl,
+  llvm::Instruction::SDiv,
+  llvm::Instruction::SRem,
+  llvm::Instruction::UDiv,
+  llvm::Instruction::URem,
 };
 
 std::vector<LoadLoadOpStore> findLoadLoadOpStore(llvm::Function& function);
