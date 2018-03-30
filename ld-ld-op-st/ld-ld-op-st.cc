@@ -3,6 +3,7 @@
 
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/Module.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/Instructions.h"
@@ -52,14 +53,17 @@ std::set<unsigned int> offloadableOpcodes = {
 std::vector<LoadLoadOpStore> findLoadLoadOpStore(llvm::Function& function);
 bool replaceLoadLoadOpStore(std::vector<LoadLoadOpStore> loadLoadOpStores);
 
-class FindLdLdOpSt : public llvm::FunctionPass {
+class FindLdLdOpSt : public llvm::ModulePass {
   public:
     static char ID;
 
-    FindLdLdOpSt() : llvm::FunctionPass(ID) {}
+    FindLdLdOpSt() : llvm::ModulePass(ID) {}
 
-    bool runOnFunction(llvm::Function& function) override {
-      lloss = findLoadLoadOpStore(function);
+    bool runOnModule(llvm::Module& module) override {
+      for (llvm::Function& function : module.functions()) {
+        auto newLloss = findLoadLoadOpStore(function);
+        lloss.insert(lloss.end(), newLloss.begin(), newLloss.end());
+      }
       return false;
     }
 
