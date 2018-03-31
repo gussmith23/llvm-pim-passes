@@ -1,8 +1,8 @@
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <set>
 #include <unordered_map>
-#include <cstring>
 
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
@@ -83,23 +83,36 @@ class PimSubgraphPass : public llvm::ModulePass {
     if (pimInstructions.c_str()) {
       offloadableInstructions.clear();
       char* string = strdup(pimInstructions.c_str());
-      char* token = strtok(string, ","); 
+      char* token = strtok(string, ",");
       while (token != NULL) {
-        if (strcmp(token, "add")==0) offloadableInstructions.insert(llvm::Instruction::Add);
-        if (strcmp(token, "sub")==0) offloadableInstructions.insert(llvm::Instruction::Sub);
-        if (strcmp(token, "and")==0) offloadableInstructions.insert(llvm::Instruction::And);
-        if (strcmp(token, "or")==0) offloadableInstructions.insert(llvm::Instruction::Or);
-        if (strcmp(token, "mul")==0) offloadableInstructions.insert(llvm::Instruction::Mul);
-        if (strcmp(token, "shl")==0) offloadableInstructions.insert(llvm::Instruction::Shl);
-        if (strcmp(token, "ashr")==0) offloadableInstructions.insert(llvm::Instruction::AShr);
-        if (strcmp(token, "lshr")==0) offloadableInstructions.insert(llvm::Instruction::LShr);
-        if (strcmp(token, "sdiv")==0) offloadableInstructions.insert(llvm::Instruction::SDiv);
-        if (strcmp(token, "udiv")==0) offloadableInstructions.insert(llvm::Instruction::UDiv);
-        if (strcmp(token, "srem")==0) offloadableInstructions.insert(llvm::Instruction::SRem);
-        if (strcmp(token, "urem")==0) offloadableInstructions.insert(llvm::Instruction::URem);
-        if (strcmp(token, "sext")==0) offloadableInstructions.insert(llvm::Instruction::SExt);
-        if (strcmp(token, "zext")==0) offloadableInstructions.insert(llvm::Instruction::ZExt);
-        if (strcmp(token, "xor")==0) offloadableInstructions.insert(llvm::Instruction::Xor);
+        if (strcmp(token, "add") == 0)
+          offloadableInstructions.insert(llvm::Instruction::Add);
+        else if (strcmp(token, "sub") == 0)
+          offloadableInstructions.insert(llvm::Instruction::Sub);
+        else if (strcmp(token, "and") == 0)
+          offloadableInstructions.insert(llvm::Instruction::And);
+        else if (strcmp(token, "or") == 0)
+          offloadableInstructions.insert(llvm::Instruction::Or);
+        else if (strcmp(token, "mul") == 0)
+          offloadableInstructions.insert(llvm::Instruction::Mul);
+        else if (strcmp(token, "shl") == 0)
+          offloadableInstructions.insert(llvm::Instruction::Shl);
+        else if (strcmp(token, "ashr") == 0)
+          offloadableInstructions.insert(llvm::Instruction::AShr);
+        else if (strcmp(token, "lshr") == 0)
+          offloadableInstructions.insert(llvm::Instruction::LShr);
+        else if (strcmp(token, "sdiv") == 0)
+          offloadableInstructions.insert(llvm::Instruction::SDiv);
+        else if (strcmp(token, "udiv") == 0)
+          offloadableInstructions.insert(llvm::Instruction::UDiv);
+        else if (strcmp(token, "srem") == 0)
+          offloadableInstructions.insert(llvm::Instruction::SRem);
+        else if (strcmp(token, "urem") == 0)
+          offloadableInstructions.insert(llvm::Instruction::URem);
+        else if (strcmp(token, "sext") == 0)
+          offloadableInstructions.insert(llvm::Instruction::SExt);
+        else if (strcmp(token, "zext") == 0)
+          offloadableInstructions.insert(llvm::Instruction::ZExt);
         token = strtok(NULL, ",");
       }
       free(string);

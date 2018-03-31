@@ -97,6 +97,8 @@ class DgDefUse : public llvm::ModulePass {
     dg::LLVMDefUseAnalysis dua(dg.get(), rd.get(), pta.get());
     dua.run();
 
+    llvm::errs() << "Built dependence graph.\n";
+
     runOnDependenceGraph(dg.get());
 
     return false;
@@ -154,6 +156,8 @@ std::shared_ptr<PimSubgraph> PimSubgraph::getSubgraphFromNode(
 }
 
 void PimSubgraph::probe(dg::LLVMNode* node, TRAVERSE_DIR dir) {
+  llvm::errs() << "probing: " << *node->getValue() << "\n";
+
   // TODO should this happen?
   if (nodes.count(node)) return;
 
