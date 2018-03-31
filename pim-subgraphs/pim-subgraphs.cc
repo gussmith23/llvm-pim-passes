@@ -75,7 +75,8 @@ class PimSubgraphPass : public llvm::ModulePass {
 
   bool runOnModule(llvm::Module& m) override {
     std::set<unsigned int> pimInstrsFromFlags = getPimInstructions();
-    if (pimInstrsFromFlags.size()) offloadableInstructions = std::move(pimInstrsFromFlags);
+    if (pimInstrsFromFlags.size())
+      offloadableInstructions = std::move(pimInstrsFromFlags);
 
     for (auto& f : m) {
       for (auto& bb : f) {
