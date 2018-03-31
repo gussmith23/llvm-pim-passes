@@ -24,6 +24,9 @@ function(add_pass PASS_NAME PASS_SOURCES)
   #target_link_libraries(${PASS_NAME} PRIVATE ${LLVM_LIBS})
 endfunction(add_pass)
 
+add_subdirectory(./util)
+
+# Add the passes
 add_subdirectory(pim-pass)
 # TODO broken by change in LLVM API
 #add_subdirectory(srivatsa_transforms)

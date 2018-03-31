@@ -1,4 +1,3 @@
-#include <cstring>
 #include <iostream>
 #include <memory>
 #include <set>
@@ -7,14 +6,9 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Pass.h>
-#include <llvm/Support/CommandLine.h>
 #include <llvm/Support/raw_ostream.h>
 
-llvm::cl::opt<std::string> pimInstructions(
-    "pi",
-    llvm::cl::desc("Comma-separated list of LLVM instructions which can be "
-                   "offloaded to memory"),
-    llvm::cl::value_desc("inst1,inst2,..."));
+#include "pim-instructions-flag.h"
 
 namespace {
 
@@ -80,43 +74,8 @@ class PimSubgraphPass : public llvm::ModulePass {
   PimSubgraphPass() : llvm::ModulePass(ID) {}
 
   bool runOnModule(llvm::Module& m) override {
-    if (pimInstructions.c_str()) {
-      offloadableInstructions.clear();
-      char* string = strdup(pimInstructions.c_str());
-      char* token = strtok(string, ",");
-      while (token != NULL) {
-        if (strcmp(token, "add") == 0)
-          offloadableInstructions.insert(llvm::Instruction::Add);
-        else if (strcmp(token, "sub") == 0)
-          offloadableInstructions.insert(llvm::Instruction::Sub);
-        else if (strcmp(token, "and") == 0)
-          offloadableInstructions.insert(llvm::Instruction::And);
-        else if (strcmp(token, "or") == 0)
-          offloadableInstructions.insert(llvm::Instruction::Or);
-        else if (strcmp(token, "mul") == 0)
-          offloadableInstructions.insert(llvm::Instruction::Mul);
-        else if (strcmp(token, "shl") == 0)
-          offloadableInstructions.insert(llvm::Instruction::Shl);
-        else if (strcmp(token, "ashr") == 0)
-          offloadableInstructions.insert(llvm::Instruction::AShr);
-        else if (strcmp(token, "lshr") == 0)
-          offloadableInstructions.insert(llvm::Instruction::LShr);
-        else if (strcmp(token, "sdiv") == 0)
-          offloadableInstructions.insert(llvm::Instruction::SDiv);
-        else if (strcmp(token, "udiv") == 0)
-          offloadableInstructions.insert(llvm::Instruction::UDiv);
-        else if (strcmp(token, "srem") == 0)
-          offloadableInstructions.insert(llvm::Instruction::SRem);
-        else if (strcmp(token, "urem") == 0)
-          offloadableInstructions.insert(llvm::Instruction::URem);
-        else if (strcmp(token, "sext") == 0)
-          offloadableInstructions.insert(llvm::Instruction::SExt);
-        else if (strcmp(token, "zext") == 0)
-          offloadableInstructions.insert(llvm::Instruction::ZExt);
-        token = strtok(NULL, ",");
-      }
-      free(string);
-    }
+    std::set<unsigned int> pimInstrsFromFlags = getPimInstructions();
+    if (pimInstrsFromFlags.size()) offloadableInstructions = std::move(pimInstrsFromFlags);
 
     for (auto& f : m) {
       for (auto& bb : f) {
