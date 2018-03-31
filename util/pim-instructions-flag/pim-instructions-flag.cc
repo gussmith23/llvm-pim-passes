@@ -4,6 +4,7 @@
 
 #include <llvm/IR/Instructions.h>
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/raw_ostream.h>
 
 llvm::cl::opt<std::string> pimInstructionsFlag(
     "pi",
@@ -46,6 +47,9 @@ std::set<unsigned int> getPimInstructions() {
         pimInstructions.insert(llvm::Instruction::SExt);
       else if (strcmp(token, "zext") == 0)
         pimInstructions.insert(llvm::Instruction::ZExt);
+      else
+        // If you get here, just add the instruction using the pattern above.
+        llvm_unreachable("Unrecognized command in pim instruction flag.");
       token = strtok(NULL, ",");
     }
     free(string);

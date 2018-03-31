@@ -1,6 +1,6 @@
 add_library(PimInstructionsFlag SHARED
             ./pim-instructions-flag.h
-            ./pim-instructions-flag.cpp)
+            ./pim-instructions-flag.cc)
 target_compile_features(PimInstructionsFlag PRIVATE cxx_range_for cxx_auto_type)
 set_target_properties(PimInstructionsFlag PROPERTIES
   COMPILE_FLAGS "-fno-rtti"
