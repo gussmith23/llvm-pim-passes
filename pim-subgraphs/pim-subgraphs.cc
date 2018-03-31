@@ -122,39 +122,6 @@ class PimSubgraphPass : public llvm::ModulePass {
   std::set<std::shared_ptr<PimSubgraph>> sgs;
 };
 
-/*
-void runOnDependenceGraph(dg::LLVMDependenceGraph* dg) {
-  if (dg == nullptr) return;
-
-  // We're going to recurse, so keep track of the subgraphs we've already
-  // recursed into.
-  if (seen.find(dg) != seen.end())
-    return;
-  else
-    seen.insert(dg);
-
-  for (auto bb_it : dg->getBlocks()) {
-    for (dg::LLVMNode* node : bb_it.second->getNodes()) {
-      // Depending on what kind of instruction it is, do something.
-
-      // If it's a call, we have to recurse into its subgraphs.
-      if (llvm::dyn_cast<llvm::CallInst>(node->getValue())) {
-        for (auto subgraph : node->getSubgraphs())
-          runOnDependenceGraph(subgraph);
-      }
-
-      else if (llvm::Instruction* inst =
-                   llvm::dyn_cast<llvm::Instruction>(node->getValue())) {
-        if (offloadableInstructions.find(inst->getOpcode()) !=
-            offloadableInstructions.end()) {
-          llvm::errs() << "Found supported instruction:\n" << *inst << "\n";
-          PimSubgraph::getSubgraphFromNode(node);
-        }
-      }
-    }
-  }
-}*/
-
 std::shared_ptr<PimSubgraph> PimSubgraph::getSubgraphFromValue(
     llvm::Value* value) {
   if (pimSubgraphs.count(value)) return pimSubgraphs[value];
