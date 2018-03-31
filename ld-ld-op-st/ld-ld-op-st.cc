@@ -119,16 +119,68 @@ class FindLdLdOpSt : public llvm::ModulePass {
 
     void print(llvm::raw_ostream& os, const llvm::Module* m) const override {
 
+      os << "LD-LD-OP-ST DATA\n";
+
       std::map<unsigned int, unsigned long> histogram;
       for (LoadLoadOpStore llos : lloss) 
         histogram[llos.op->getOpcode()]++;
 
-      for (unsigned int opcode : offloadableOpcodes) 
-        os << llvm::Instruction::getOpcodeName(opcode) << "\t" << histogram[opcode] << "\n";
+      os << "OPCODE HISTOGRAM (the opcode of the op in a ld-ld-op-st)\n";
+      for (auto hist_it : histogram)
+        os << llvm::Instruction::getOpcodeName(hist_it.first) << "\t" << hist_it.second << "\n";
+
+      os << "\n";
+      os << "OP-ST DATA (op-st = group of instructions that was nearly a ld-ld-op-st)\n";
+      os << "\n";
+
+      
+      // Classify the types of the operands.
+      unsigned long oneImmediateOperand = 0;
+      unsigned long twoImmediateOperands = 0;
+
+      // Get more detail about the immediates used.
+      std::map<llvm::Type*, unsigned long> immediateHistogram;
+
+      // Get more detail about the instructions which produce operand values.
+      std::map<unsigned int, unsigned long> operandInstructionHistogram;
+
+      for (OpStore opStore : oss) {
+
+        unsigned int numImmediates = 0;
+        for (auto input : opStore.inputs) {
+          if (llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(input))
+            operandInstructionHistogram[inst->getOpcode()]++;
+          // TODO we assume that it's an immediate otherwise, which I'm not
+          // sure is a safe assumption.
+          else {
+            numImmediates++;
+            immediateHistogram[input->getType()]++;
+          }
+        }
+
+        switch (numImmediates) {
+          case 1: oneImmediateOperand++; break;
+          case 2: twoImmediateOperands++; break;
+        }
+      }
+
+
+      os << "OPERAND OPCODE HISTOGRAM (for operands that aren't loads)\n";
+      for (auto hist_it : operandInstructionHistogram)
+        os << llvm::Instruction::getOpcodeName(hist_it.first) << "\t" << hist_it.second << "\n";
 
       os << "\n";
 
-      for (OpStore opStore : oss) os << opStore << "\n";
+      os << "Number of patterns with one immediate operand:\n"<< oneImmediateOperand << "\n";
+      os << "Number of patterns with two immediate operands:\n"<< twoImmediateOperands << "\n";
+
+      os << "\n";
+
+      os << "IMMEDIATE TYPE HISTOGRAM (for operands that are immediates)\n";
+      for (auto hist_it : immediateHistogram) {
+        hist_it.first->print(os);
+        os << "\t" << hist_it.second << "\n";
+      }
 
     }
   private:
