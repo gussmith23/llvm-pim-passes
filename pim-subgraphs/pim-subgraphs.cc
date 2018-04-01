@@ -41,6 +41,7 @@ class PimSubgraph {
    */
   static std::shared_ptr<PimSubgraph> getSubgraphFromValue(llvm::Value* value);
 
+  // The offloadable instructions interior to the graph.
   std::set<llvm::Value*> values;
 
   // The nodes on the frontier of the graph.
@@ -49,6 +50,23 @@ class PimSubgraph {
   // Similarly, frontier nodes are nodes with at least one user that can't be
   // offloaded to memory.
   std::set<llvm::Value*> rearFrontier, frontier;
+
+  friend llvm::raw_ostream& operator<<(llvm::raw_ostream& os,
+                                       const PimSubgraph& ps) {
+    os << "Rear frontier:\n";
+    for (auto i : ps.rearFrontier) {
+      os << *i << "\n";
+    }
+    os << "Subgraph:\n";
+    for (auto i : ps.values) {
+      os << *i << "\n";
+    }
+    os << "Frontier:\n";
+    for (auto i : ps.frontier) {
+      os << *i << "\n";
+    }
+    return os;
+  }
 
  private:
   PimSubgraph() {}
@@ -89,34 +107,7 @@ class PimSubgraphPass : public llvm::ModulePass {
     return false;
   }
 
-  void print(llvm::raw_ostream& os, const llvm::Module* m) const override {
-    os << "Total number of subgraphs:\n" << sgs.size() << "\n";
-
-    for (auto sg : sgs) {
-      os << "\nSubgraph " << sg.get() << "\n";
-
-      os << "\nRear frontier:\n";
-      for (auto i : sg->rearFrontier) {
-        os << *i << "\n";
-      }
-
-      /*
-      std::unordered_map<unsigned int, unsigned long> rearFrontierOpcodeHist;
-      for (auto i : sg->rearFrontier) {
-        rearFrontierOpcodeHist[i->
-      }*/
-
-      os << "\nSubgraph:\n";
-      for (auto i : sg->values) {
-        os << *i << "\n";
-      }
-
-      os << "\nFrontier:\n";
-      for (auto i : sg->frontier) {
-        os << *i << "\n";
-      }
-    }
-  }
+  void print(llvm::raw_ostream& os, const llvm::Module* m) const override;
 
  private:
   std::set<std::shared_ptr<PimSubgraph>> sgs;
@@ -173,6 +164,97 @@ bool canOffload(llvm::Value* value) {
   if (llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(value))
     if (offloadableInstructions.count(inst->getOpcode())) return true;
   return false;
+}
+
+/**
+ * For a group of llvm::Value*, generate and print two histograms:
+ * - The opcode histogram, for those values which are instructions.
+ * - the immediate type histogram, for the rest (which we assume are immediates)
+ * Does not clear the histograms beforehand.
+ */
+void updateHists(const std::set<llvm::Value*>& values,
+                 std::map<unsigned int, unsigned long>& opcodeHist,
+                 std::map<llvm::Type*, unsigned long>& immedateTypeHist) {
+  for (auto i : values) {
+    if (llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(i))
+      opcodeHist[inst->getOpcode()]++;
+    else
+      immedateTypeHist[i->getType()]++;
+  }
+}
+
+void printHists(const std::map<unsigned int, unsigned long>& opcodeHist,
+                const std::map<llvm::Type*, unsigned long>& immedateTypeHist,
+                const std::string& opcodeHistHeading,
+                const std::string& immedateTypeHistHeading,
+                llvm::raw_ostream& os) {
+  // Print
+  os << opcodeHistHeading << "\n";
+  for (auto hist_it : opcodeHist)
+    os << llvm::Instruction::getOpcodeName(hist_it.first) << "\t"
+       << hist_it.second << "\n";
+  os << "\n";
+  os << immedateTypeHistHeading << "\n";
+  for (auto hist_it : immedateTypeHist) {
+    hist_it.first->print(os);
+    os << "\t" << hist_it.second << "\n";
+  }
+}
+
+void PimSubgraphPass::print(llvm::raw_ostream& os,
+                            const llvm::Module* m) const {
+  os << "Total number of subgraphs:\n" << sgs.size() << "\n";
+
+  std::map<unsigned int, unsigned long> rearFrontierOpcodeHist, opcodeHist,
+      frontierOpcodeHist;
+  std::map<llvm::Type*, unsigned long> rearFrontierImmedateTypeHist,
+      immedateTypeHist, frontierImmediateTypeHist;
+
+  // This histogram tracks the number of instructions actually offloaded (i.e.
+  // sg->values) per subgraph.
+  std::map<unsigned long, unsigned long> subgraphSizeHist;
+
+  // Maps size of sg->values to PimSubgraphs, so that we can easily find the
+  // largest/smallest subgraphs.
+  std::multimap<unsigned long, std::shared_ptr<PimSubgraph>>
+      offloadSizeToSubgraph;
+
+  for (auto sg : sgs) {
+    subgraphSizeHist[sg->values.size()]++;
+
+    // TODO could be updated to newer C++14 syntax with make_pair
+    std::pair<unsigned long, std::shared_ptr<PimSubgraph>> p(sg->values.size(),
+                                                             sg);
+    offloadSizeToSubgraph.insert(p);
+
+    updateHists(sg->rearFrontier, rearFrontierOpcodeHist,
+                rearFrontierImmedateTypeHist);
+    updateHists(sg->values, opcodeHist, immedateTypeHist);
+    updateHists(sg->frontier, frontierOpcodeHist, frontierImmediateTypeHist);
+  }
+
+  os << "SUBGRAPH SIZE HISTOGRAM\n";
+  for (auto hist_it : subgraphSizeHist)
+    os << hist_it.first << "\t" << hist_it.second << "\n";
+
+  os << "LARGEST SUBGRAPHS:\n";
+  constexpr int numSgToPrint = 10;
+  auto it = offloadSizeToSubgraph.rbegin();
+  for (int i = 0; it != offloadSizeToSubgraph.rend() && i < numSgToPrint;
+       it++, i++)
+    os << *it->second << "\n";
+
+  printHists(rearFrontierOpcodeHist, rearFrontierImmedateTypeHist,
+             "REAR FRONTIER OPERAND HISTOGRAM",
+             "REAR FRONTIER IMMEDIATE TYPE HISTOGRAM", os);
+  os << "\n";
+  printHists(opcodeHist, immedateTypeHist, "SUBGRAPH OPERAND HISTOGRAM",
+             "SUBGRAPH IMMEDIATE TYPE HISTOGRAM", os);
+  os << "\n";
+  printHists(frontierOpcodeHist, frontierImmediateTypeHist,
+             "FRONTIER OPERAND HISTOGRAM", "FRONTIER IMMEDIATE TYPE HISTOGRAM",
+             os);
+  os << "\n";
 }
 
 }  // namespace
