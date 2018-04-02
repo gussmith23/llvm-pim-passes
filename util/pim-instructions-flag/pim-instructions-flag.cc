@@ -27,6 +27,8 @@ std::set<unsigned int> getPimInstructions() {
         pimInstructions.insert(llvm::Instruction::And);
       else if (strcmp(token, "or") == 0)
         pimInstructions.insert(llvm::Instruction::Or);
+      else if (strcmp(token, "xor") == 0)
+        pimInstructions.insert(llvm::Instruction::Xor);
       else if (strcmp(token, "mul") == 0)
         pimInstructions.insert(llvm::Instruction::Mul);
       else if (strcmp(token, "shl") == 0)
