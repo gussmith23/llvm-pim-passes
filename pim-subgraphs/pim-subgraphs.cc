@@ -203,7 +203,7 @@ void printHists(const std::map<unsigned int, unsigned long>& opcodeHist,
 
 void PimSubgraphPass::print(llvm::raw_ostream& os,
                             const llvm::Module* m) const {
-  os << "Total number of subgraphs:\n" << sgs.size() << "\n";
+  os << "TOTAL NUMBER OF SUBGRAPHS\n" << sgs.size() << "\n";
 
   std::map<unsigned int, unsigned long> rearFrontierOpcodeHist, opcodeHist,
       frontierOpcodeHist;
@@ -237,12 +237,16 @@ void PimSubgraphPass::print(llvm::raw_ostream& os,
   for (auto hist_it : subgraphSizeHist)
     os << hist_it.first << "\t" << hist_it.second << "\n";
 
+  os << "\n";
+
   os << "LARGEST SUBGRAPHS:\n";
   constexpr int numSgToPrint = 10;
   auto it = offloadSizeToSubgraph.rbegin();
   for (int i = 0; it != offloadSizeToSubgraph.rend() && i < numSgToPrint;
        it++, i++)
     os << *it->second << "\n";
+
+  os << "\n";
 
   printHists(rearFrontierOpcodeHist, rearFrontierImmedateTypeHist,
              "REAR FRONTIER OPERAND HISTOGRAM",
@@ -251,6 +255,8 @@ void PimSubgraphPass::print(llvm::raw_ostream& os,
   printHists(opcodeHist, immedateTypeHist, "SUBGRAPH OPERAND HISTOGRAM",
              "SUBGRAPH IMMEDIATE TYPE HISTOGRAM", os);
   os << "\n";
+  // Note that there shouldn't be any immediates on the frontier (because
+  // immediates aren't instructions, and don't take any operands)
   printHists(frontierOpcodeHist, frontierImmediateTypeHist,
              "FRONTIER OPERAND HISTOGRAM", "FRONTIER IMMEDIATE TYPE HISTOGRAM",
              os);
