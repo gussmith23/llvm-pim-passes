@@ -147,7 +147,44 @@ void PimSubgraph::probe(llvm::Value* value, TRAVERSE_DIR dir) {
   if (values.count(value)) return;
 
   if (canOffload(value)) {
-    values.insert(value);
+    // TODO we could potentially have a flag to ignore basic block boundaries.
+    // if you want it, this is the place to implement it.
+
+    // If w'ere not the fisrt thing to be added, we have to make sure we're in
+    // the same basic block as the other instructions. Otherwise, we can't be
+    // offloaded to memory.
+    if (values.size()) {
+      // If we can offload, then we should be an Instruction.
+      const llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(value);
+      const llvm::Instruction* representativeInst =
+          llvm::dyn_cast<llvm::Instruction>(*values.begin());
+      assert(inst && representativeInst && "These must be instructions!");
+
+      if (inst->getParent() == representativeInst->getParent()) {
+        values.insert(value);
+      } else {
+        // We go into the rear or forward frontier otherwise.
+        // TODO check this logic
+        if (dir == BACKWARD) {
+          rearFrontier.insert(value);
+          return;
+        } else if (dir == FORWARD) {
+          frontier.insert(value);
+          return;
+        } else {
+          // Shouldn't be able to get here; if values.size()>0, then there should
+          // be a direction.
+          llvm_unreachable("We should have a DIR set if values isn't empty!");
+          return;
+        }
+      }
+    }
+    // Otherwise, if we're the first potential value, then we definitely go in
+    // the set.
+    // TODO check this logic; i'm tired.
+    else {
+      values.insert(value);
+    }
   } else if (dir == BACKWARD) {
     rearFrontier.insert(value);
     return;
