@@ -372,7 +372,8 @@ bool compareSubgraphValues(const llvm::Value* lhs, const llvm::Value* rhs) {
   else if (const llvm::Operator* lhsOp = llvm::dyn_cast<llvm::Operator>(lhs)) {
     if (const llvm::Operator* rhsOp = llvm::dyn_cast<llvm::Operator>(rhs)) {
       return lhsOp->getOpcode() == rhsOp->getOpcode();
-    } else return false;
+    } else
+      return false;
   }
 
   // TODO if you hit this, simply implement the comparison by checking the error
