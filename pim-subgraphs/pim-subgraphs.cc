@@ -9,6 +9,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
+#include "llvm/IR/Operator.h"
 
 #include "pim-instructions-flag.h"
 
@@ -277,10 +278,7 @@ void PimSubgraphPass::print(llvm::raw_ostream& os,
   auto cmpSubgraphSize =
       [](std::pair<std::shared_ptr<PimSubgraph>, unsigned long>& lhs,
          std::pair<std::shared_ptr<PimSubgraph>, unsigned long>& rhs) {
-        return (lhs.first->rearFrontier.size() + lhs.first->values.size() +
-                lhs.first->frontier.size()) >
-               (rhs.first->rearFrontier.size() + rhs.first->values.size() +
-                rhs.first->frontier.size());
+        return lhs.first->values.size() > rhs.first->values.size();
       };
 
   sort(subgraphClasses.begin(), subgraphClasses.end(), cmpCount);
@@ -298,7 +296,8 @@ void PimSubgraphPass::print(llvm::raw_ostream& os,
   os << "BY SUBGRAPH SIZE:\n";
   i = 0;
   for (const auto it : subgraphClasses) {
-    os << "Count:\n" << it.second << "\nSubgraph:\n";
+    os << "Count:\n" << it.first->values.size();
+    os << it.second << "\nSubgraph:\n";
     sgToDotGraph(it.first, os);
     os << "\n";
     if (++i > numToPrint) break;
@@ -307,15 +306,6 @@ void PimSubgraphPass::print(llvm::raw_ostream& os,
   os << "SUBGRAPH SIZE HISTOGRAM\n";
   for (auto hist_it : subgraphSizeHist)
     os << hist_it.first << "\t" << hist_it.second << "\n";
-
-  os << "\n";
-
-  os << "LARGEST SUBGRAPHS:\n";
-  constexpr int numSgToPrint = 10;
-  auto it = offloadSizeToSubgraph.rbegin();
-  for (int i = 0; it != offloadSizeToSubgraph.rend() && i < numSgToPrint;
-       it++, i++)
-    os << *it->second << "\n";
 
   os << "\n";
 
@@ -342,6 +332,11 @@ void PimSubgraphPass::print(llvm::raw_ostream& os,
  * For our purposes, this just means:
  * - If they're instructions, they have the same opcode.
  * - If they're immediates, they have the same type.
+ *
+ * TODO This doesn't actually make sense as it is. This comparison is applicable
+ * to subgraph values, but it shouldn't be used for frontier values. We can have
+ * any types in the frontier (e.g. ptrtoint).
+ * For now, simply add cases as needed.
  */
 bool compareSubgraphValues(const llvm::Value* lhs, const llvm::Value* rhs) {
   // If they point to the same value, this is trivially true.
@@ -372,6 +367,17 @@ bool compareSubgraphValues(const llvm::Value* lhs, const llvm::Value* rhs) {
     } else
       return false;
   }
+
+  // TODO not sure if this is right.
+  else if (const llvm::Operator* lhsOp = llvm::dyn_cast<llvm::Operator>(lhs)) {
+    if (const llvm::Operator* rhsOp = llvm::dyn_cast<llvm::Operator>(rhs)) {
+      return lhsOp->getOpcode() == rhsOp->getOpcode();
+    } else return false;
+  }
+
+  // TODO if you hit this, simply implement the comparison by checking the error
+  // log and seeing the types of lhs and rhs.
+  // See the note above the function. This needs to be fixed.
   llvm::errs() << *rhs << "\n" << *lhs;
   llvm_unreachable(
       "Tried to compare two values that aren't instructions or immediates!");
