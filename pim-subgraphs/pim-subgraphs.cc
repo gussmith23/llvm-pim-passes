@@ -78,6 +78,7 @@ class PimSubgraph {
    * dir: the direction we were traveling when this call to probe() occured. If
    * this node can't be offloaded to memory, this determines whether the node
    * gets added to the frontier or the rear frontier.
+   * TODO change these to UPWARD and DOWNWARD to match thesis wording.
    */
   enum TRAVERSE_DIR { BACKWARD, FORWARD, INIT };
   void probe(llvm::Value* value, TRAVERSE_DIR dir = INIT);
