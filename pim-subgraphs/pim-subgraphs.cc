@@ -11,20 +11,10 @@
 #include <llvm/Support/raw_ostream.h>
 #include "llvm/IR/Operator.h"
 
-#include "pim-instructions-flag.h"
+#include "offloadable-instructions.h"
 
 namespace {
 
-/**
- * Determine whether an LLVM value (e.g. an instruction or immediate) can be
- * offloaded to memory.
- */
-bool canOffload(llvm::Value* value);
-std::set<unsigned int> offloadableInstructions = {
-    llvm::Instruction::Add,           llvm::Instruction::Sub,
-    llvm::Instruction::And,           llvm::Instruction::Or,
-    llvm::Instruction::Xor,           llvm::Instruction::Mul,
-    llvm::Instruction::BinaryOps::Shl};
 
 /**
  * Represents a connected subgraph of nodes, where each of the nodes can be
@@ -106,10 +96,6 @@ class PimSubgraphPass : public llvm::ModulePass {
   PimSubgraphPass() : llvm::ModulePass(ID) {}
 
   bool runOnModule(llvm::Module& m) override {
-    std::set<unsigned int> pimInstrsFromFlags = getPimInstructions();
-    if (pimInstrsFromFlags.size())
-      offloadableInstructions = std::move(pimInstrsFromFlags);
-
     for (auto& f : m) {
       for (auto& bb : f) {
         for (auto& i : bb) {
@@ -209,12 +195,6 @@ void PimSubgraph::probe(llvm::Value* value, TRAVERSE_DIR dir) {
   for (auto user : value->users()) {
     probe(user, FORWARD);
   }
-}
-
-bool canOffload(llvm::Value* value) {
-  if (llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(value))
-    if (offloadableInstructions.count(inst->getOpcode())) return true;
-  return false;
 }
 
 /**

@@ -1,1 +1,1 @@
-add_subdirectory(./pim-instructions-flag)
+add_subdirectory(./offloadable-instructions)

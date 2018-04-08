@@ -14,6 +14,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
+#include "offloadable-instructions.h"
+
 namespace {
 
 /***
@@ -73,18 +75,6 @@ struct OpStore {
   std::vector<llvm::Value*> inputs;
   llvm::Instruction* op;
   std::vector<llvm::Value*> stores;
-};
-
-/**
- * The instructions which our Processing in Memory architecture can support
- * in-memory.
- */
-std::set<unsigned int> offloadableOpcodes = {
-    llvm::Instruction::Add,  llvm::Instruction::Sub,  llvm::Instruction::Mul,
-    llvm::Instruction::And,  llvm::Instruction::Or,   llvm::Instruction::Xor,
-    llvm::Instruction::AShr, llvm::Instruction::LShr, llvm::Instruction::Shl,
-    llvm::Instruction::SDiv, llvm::Instruction::SRem, llvm::Instruction::UDiv,
-    llvm::Instruction::URem,
 };
 
 /**
@@ -216,7 +206,7 @@ void findLoadLoadOpStore(llvm::Function& function,
        iter != worklist.end(); ++iter) {
     llvm::Instruction* instr = *iter;
 
-    if (offloadableOpcodes.find(instr->getOpcode()) == offloadableOpcodes.end())
+    if (!canOffload(instr))
       continue;
 
     // We use these to track different things about the operands.
