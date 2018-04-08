@@ -637,6 +637,10 @@ bool operator==(const PimSubgraph& lhs, const PimSubgraph& rhs) {
   return doIt(lhs, rhs);
 }
 
+/**
+ * If you want to specialize how a type of Value appears in the dot graph, this
+ * is the place to do it.
+ */
 void printValueDeclaration(const llvm::Value* val, llvm::raw_ostream& os) {
   if (const llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(val)) {
     std::stringstream ss;
@@ -647,9 +651,11 @@ void printValueDeclaration(const llvm::Value* val, llvm::raw_ostream& os) {
     os << "\t" << (unsigned long)val << " [label=\"";
     imm->getType()->print(os);
     os << "\"];\n";
-  } else
-    llvm_unreachable(
-        "shouldn't get here -- should only work with insts and immediates");
+  } else {
+    os << "\t" << (unsigned long)val << " [label=\"";
+    val->getType()->print(os);
+    os << "\"];\n";
+  }
 }
 void sgToDotGraph(const std::shared_ptr<PimSubgraph> sg,
                   llvm::raw_ostream& os) {
