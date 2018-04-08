@@ -19,21 +19,23 @@ llvm::cl::opt<std::string> pimInstructionsFlag(
  * memory.
  */
 std::set<unsigned int> offloadableInstructions = {
-    llvm::Instruction::Add,           llvm::Instruction::Sub,
-    llvm::Instruction::Mul,           llvm::Instruction::UDiv,
-    llvm::Instruction::SDiv,          llvm::Instruction::URem,
-    llvm::Instruction::SRem,          llvm::Instruction::FAdd,
-    llvm::Instruction::FSub,          llvm::Instruction::FMul,
-    llvm::Instruction::FDiv,          llvm::Instruction::FRem,
-    llvm::Instruction::GetElementPtr, llvm::Instruction::Shl,
-    llvm::Instruction::LShr,          llvm::Instruction::AShr,
-    llvm::Instruction::And,           llvm::Instruction::Or,
-    llvm::Instruction::Xor,           llvm::Instruction::Trunc,
-    llvm::Instruction::FPTrunc,       llvm::Instruction::ZExt,
-    llvm::Instruction::SExt,          llvm::Instruction::FPToUI,
-    llvm::Instruction::FPToSI,        llvm::Instruction::UIToFP,
-    llvm::Instruction::SIToFP,        llvm::Instruction::PtrToInt,
-    llvm::Instruction::IntToPtr,      llvm::Instruction::BitCast};
+    llvm::Instruction::Add, llvm::Instruction::Sub, llvm::Instruction::Mul,
+    llvm::Instruction::UDiv, llvm::Instruction::SDiv, llvm::Instruction::URem,
+    llvm::Instruction::SRem, llvm::Instruction::FAdd, llvm::Instruction::FSub,
+    llvm::Instruction::FMul, llvm::Instruction::FDiv, llvm::Instruction::FRem,
+    // TODO GetElementPtr could probably be done in memory, but it clutters our
+    // results with getelementptr->getelementptr->...->load subgraphs. For now,
+    // I'm leaving it out; however, in the future it might be useful to use it.
+    // However, there's a chance it's always just used to do loads, in which
+    // case it'll never be useful/offloadable.
+    // llvm::Instruction::GetElementPtr,
+    llvm::Instruction::Shl, llvm::Instruction::LShr, llvm::Instruction::AShr,
+    llvm::Instruction::And, llvm::Instruction::Or, llvm::Instruction::Xor,
+    llvm::Instruction::Trunc, llvm::Instruction::FPTrunc,
+    llvm::Instruction::ZExt, llvm::Instruction::SExt, llvm::Instruction::FPToUI,
+    llvm::Instruction::FPToSI, llvm::Instruction::UIToFP,
+    llvm::Instruction::SIToFP, llvm::Instruction::PtrToInt,
+    llvm::Instruction::IntToPtr, llvm::Instruction::BitCast};
 
 /**
  * Read the value of the -pi flag, parse the instructions, and return a list of
