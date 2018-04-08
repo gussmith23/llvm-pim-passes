@@ -397,9 +397,12 @@ bool compareSubgraphValues(const llvm::Value* lhs, const llvm::Value* rhs) {
   // TODO if you hit this, simply implement the comparison by checking the error
   // log and seeing the types of lhs and rhs.
   // See the note above the function. This needs to be fixed.
+  llvm::errs() << "Tried to compare two unrecognized types of values."
+              << " Defaulting to false. If you want to avoid this, implement"
+              << " their comparison in compareSubgraphValues.";
   llvm::errs() << *rhs << "\n" << *lhs;
-  llvm_unreachable(
-      "Tried to compare two values that aren't instructions or immediates!");
+//  llvm_unreachable(
+//    "Tried to compare two values that aren't instructions or immediates!");
   return false;
 }
 
