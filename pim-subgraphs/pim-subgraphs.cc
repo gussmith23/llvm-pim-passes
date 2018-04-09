@@ -301,7 +301,7 @@ void PimSubgraphPass::print(llvm::raw_ostream& os,
 
   sort(subgraphClasses.begin(), subgraphClasses.end(), cmpCount);
   os << "BY NUMBER OF INSTANCES:\n";
-  const int numToPrint = 10;
+  const int numToPrint = 100;
   int i = 0;
   for (const auto it : subgraphClasses) {
     os << "Count:\n" << it.second << "\nSubgraph:\n";
