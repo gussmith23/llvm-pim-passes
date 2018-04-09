@@ -119,6 +119,9 @@ class FindLdLdOpSt : public llvm::ModulePass {
           "ld-ld-op-st)\n";
     os << "\n";
 
+    os << "TOTAL OP-ST:" << "\n";
+    os << oss.size() << "\n";
+
     // Classify the types of the operands.
     unsigned long oneImmediateOperand = 0;
     unsigned long twoImmediateOperands = 0;
