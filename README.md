@@ -1,3 +1,8 @@
+# LLVM Analysis Passes for Processing in Memory Design
+This repository contains code used to implement my [Master's Thesis](https://github.com/gussmith23/masters-thesis/releases/).
+
+The LLVM analysis passes in this 
+
 ## Dependencies
 - LLVM
 - [dg](https://github.com/mchalupa/dg), though it isn't used at the moment. Feel free to refactor the build to remove this depencency.
