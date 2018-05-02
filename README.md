@@ -28,5 +28,5 @@ LLVM is an evolving project. Updates to LLVM in the future may break this code. 
 - [ld-ld-op-st.](ld-ld-op-st) This pass finds basic load-load-op-store patterns, as described in my thesis.
 - [pim-subgraphs.](pim-subgraphs) This pass finds the more complex offloadable subgraphs, as described in my thesis.
 - [dg-def-use.](dg-def-use) An earlier version of the pim-subgraphs pass built with the dg library. I abandoned this pass when I discovered LLVM provided the dependency information I needed already.
-- [srivatsa_transforms.](srivatsa_transforms) I inherited this collection of passes from a labmate. They served as early examples and inspiration for my thesis. 
+- [old-passes.](old-passes) I inherited this collection of passes from a labmate. They served as early examples and inspiration for my thesis. 
 - [util.](util) Utilities shared by the passes.

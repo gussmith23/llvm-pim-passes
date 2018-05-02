@@ -29,7 +29,7 @@ add_subdirectory(./util)
 # Add the passes
 add_subdirectory(pim-pass)
 # TODO broken by change in LLVM API
-#add_subdirectory(srivatsa_transforms)
+#add_subdirectory(old-passes)
 add_subdirectory(test-module-pass)
 add_subdirectory(./dg-test)
 add_subdirectory(./ld-ld-op-st)
