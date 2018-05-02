@@ -1,6 +1,8 @@
 # LLVM Passes for Processing in Memory Design
 _This repository contains code used to implement [my Master's Thesis](https://github.com/gussmith23/masters-thesis/releases/)._
 
+_Thesis code documentation: [ms-thesis-doc](https://github.com/gussmith23/ms-thesis-doc)._
+
 This repository contains a number of LLVM passes which perform various analyses over programs. In this README, we will highlight the most important passes.
 
 ## Building
