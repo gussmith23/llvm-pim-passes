@@ -29,7 +29,6 @@ add_subdirectory(./util)
 # Add the passes
 # TODO broken by change in LLVM API
 #add_subdirectory(old-passes)
-add_subdirectory(test-module-pass)
 add_subdirectory(./ld-ld-op-st)
 add_subdirectory(./dg-def-use)
 add_subdirectory(./pim-subgraphs)
