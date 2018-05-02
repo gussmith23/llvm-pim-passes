@@ -6,6 +6,12 @@ add_definitions(-DHAVE_LLVM -DENABLE_CFG)
 
 find_package(LLVM REQUIRED CONFIG)
 
+# These are the dg libraries needed for dg-def-use.
+# You will need to point CMake to the directory where these libraries live.
+find_library(LLVMdg_LIBRARY LLVMdg)
+find_library(LLVMrd_LIBRARY LLVMrd)
+find_library(RD_LIBRARY RD)
+
 set(PASS_LIBRARY_OUTPUT_DIR ${PROJECT_BINARY_DIR}/pass-libs)
 
 function(add_pass PASS_NAME PASS_SOURCES)
@@ -30,5 +36,7 @@ add_subdirectory(./util)
 # TODO broken by change in LLVM API
 #add_subdirectory(old-passes)
 add_subdirectory(./ld-ld-op-st)
-add_subdirectory(./dg-def-use)
+if(LLVMdg_LIBRARY AND LLVMrd_LIBRARY AND RD_LIBRARY)
+  add_subdirectory(./dg-def-use)
+endif()
 add_subdirectory(./pim-subgraphs)
