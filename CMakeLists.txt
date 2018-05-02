@@ -27,7 +27,6 @@ endfunction(add_pass)
 add_subdirectory(./util)
 
 # Add the passes
-add_subdirectory(pim-pass)
 # TODO broken by change in LLVM API
 #add_subdirectory(old-passes)
 add_subdirectory(test-module-pass)
